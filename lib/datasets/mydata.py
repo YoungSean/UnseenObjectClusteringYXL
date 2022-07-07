@@ -1,7 +1,5 @@
-import detectron2
 
-from tabletop_object import TableTopObject
-from tabletop_dataset import TableTopObject2
+from tabletop_dataset import TableTopDataset, getTabletopDataset
 from detectron2.data import MetadataCatalog
 
 #dataset = TableTopObject2(image_set='train')
@@ -9,17 +7,14 @@ from detectron2.data import MetadataCatalog
 from detectron2.data import DatasetCatalog
 
 
-def getTabletopDataset():
-    dataset = TableTopObject2(image_set='train')
-    print(len(dataset))
-    dataset_dicts = []
-    for i in range(len(dataset)):
-        dataset_dicts.append(dataset[i])
-
-    return dataset_dicts
-
-
-
+# def getTabletopDataset():
+#     dataset = TableTopDataset(image_set='train')
+#     print(len(dataset))
+#     dataset_dicts = []
+#     for i in range(len(dataset)):
+#         dataset_dicts.append(dataset[i])
+#
+#     return dataset_dicts
 
 DatasetCatalog.register("my_dataset", getTabletopDataset)
 # later, to access the data:
@@ -44,5 +39,6 @@ for d in random.sample(data, 10):
     window_name = 'image'
     cv2.imshow(window_name, out.get_image()[:, :, ::-1])
     cv2.waitKey(0)
-
+#closing all open windows
+cv2.destroyAllWindows()
 print("done!")
