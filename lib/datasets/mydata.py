@@ -29,10 +29,10 @@ import cv2
 from detectron2.utils.visualizer import Visualizer
 import matplotlib.pyplot as plt
 
-balloon_metadata = MetadataCatalog.get("my_dataset")
+metadata = MetadataCatalog.get("my_dataset")
 for d in random.sample(data, 10):
     img = cv2.imread(d["file_name"])
-    visualizer = Visualizer(img[:, :, ::-1], metadata=balloon_metadata, scale=0.5)
+    visualizer = Visualizer(img[:, :, ::-1], metadata=metadata, scale=0.5)
     out = visualizer.draw_dataset_dict(d)
 
     #plt.imshow(out.get_image())
