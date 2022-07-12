@@ -104,7 +104,7 @@ def mask_to_tight_box(mask):
 
 def getTabletopDataset(image_set='train'):
     dataset = TableTopDataset(image_set=image_set)
-    print(len(dataset))
+    print("The size of the dataset is ", len(dataset))
     dataset_dicts = []
     for i in range(len(dataset)):
         dataset_dicts.append(dataset[i])
