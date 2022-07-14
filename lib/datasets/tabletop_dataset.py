@@ -380,8 +380,8 @@ class TableTopDataset(data.Dataset, datasets.imdb):
         """
         Return the default path where tabletop_object is expected to be installed.
         """
-        #return os.path.join(datasets.ROOT_DIR, 'data', 'tabletop')
-        return os.path.join(datasets.ROOT_DIR, 'data', 'tabletop_demo')
+        return os.path.join(datasets.ROOT_DIR, 'data', 'tabletop')
+        # return os.path.join(datasets.ROOT_DIR, 'data', 'tabletop_demo')
 
     def get_img_info(self, idx):
         # get img_height and img_width. This is used if
