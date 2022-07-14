@@ -6,6 +6,7 @@ from .imdb import imdb
 from .tabletop_object import TableTopObject
 from .osd_object import OSDObject
 from .ocid_object import OCIDObject
+from .tabletop_dataset import getTabletopDataset, TableTopDataset
 
 import os.path as osp
 ROOT_DIR = osp.join(osp.dirname(__file__), '..', '..')
