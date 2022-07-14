@@ -20,6 +20,7 @@ from utils import augmentation
 from utils import mask as util_
 from detectron2.structures import BoxMode
 import pycocotools
+from detectron2.data import detection_utils as utils
 
 data_loading_params = {
 
@@ -113,7 +114,7 @@ def getTabletopDataset(image_set='train'):
 
 class TableTopDataset(data.Dataset, datasets.imdb):
 
-    def __init__(self, image_set="train", tabletop_object_path = None):
+    def __init__(self, image_set="train", tabletop_object_path = None, data_mapper = None):
 
         self._name = 'tabletop_object_' + image_set
         self._image_set = image_set
@@ -128,6 +129,7 @@ class TableTopDataset(data.Dataset, datasets.imdb):
         self._classes = self._classes_all
         self._pixel_mean = torch.tensor(cfg.PIXEL_MEANS / 255.0).float()
         self.params = data_loading_params
+        self.data_mapper = data_mapper
 
         # crop dose not use background
         if cfg.TRAIN.SYN_CROP:
@@ -355,6 +357,18 @@ class TableTopDataset(data.Dataset, datasets.imdb):
             }
             objs.append(obj)
         record["annotations"] = objs
+
+        if not objs:
+            return record
+
+
+        if self.data_mapper:
+            image_shape = im.shape[:2]
+            instances = utils.annotations_to_instances(
+                objs, image_shape, mask_format="bitmask"
+            )
+            record["instances"] = utils.filter_empty_instances(instances)
+
 
         return record
 
