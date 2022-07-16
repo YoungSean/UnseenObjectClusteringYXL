@@ -42,7 +42,7 @@ class AverageMeter(object):
 
 
 def clustering_features(features, num_seeds=100):
-    metric = cfg.TRAIN.EMBEDDING_METRIC
+    metric = cfg.TRAIN.EMBEDDING_METRIC  # e.g. cosine
     height = features.shape[2]
     width = features.shape[3]
     out_label = torch.zeros((features.shape[0], height, width))

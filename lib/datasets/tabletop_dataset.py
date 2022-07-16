@@ -114,7 +114,7 @@ def getTabletopDataset(image_set='train'):
 
 class TableTopDataset(data.Dataset, datasets.imdb):
 
-    def __init__(self, image_set="train", tabletop_object_path = None, data_mapper = None):
+    def __init__(self, image_set="train", tabletop_object_path = None, data_mapper = False, eval=False):
 
         self._name = 'tabletop_object_' + image_set
         self._image_set = image_set
@@ -130,6 +130,7 @@ class TableTopDataset(data.Dataset, datasets.imdb):
         self._pixel_mean = torch.tensor(cfg.PIXEL_MEANS / 255.0).float()
         self.params = data_loading_params
         self.data_mapper = data_mapper
+        self.eval = eval
 
         # crop dose not use background
         if cfg.TRAIN.SYN_CROP:
@@ -358,18 +359,20 @@ class TableTopDataset(data.Dataset, datasets.imdb):
             objs.append(obj)
         record["annotations"] = objs
 
+        # if self.eval:
+        label_blob = torch.from_numpy(foreground_labels).unsqueeze(0)
+        record["label"] = label_blob
+        # record["image"] = torch.permute(torch.from_numpy(im), (2, 0, 1))
+
         if not objs:
-            return record
-
-
-        if self.data_mapper:
-            image_shape = im.shape[:2]
-            instances = utils.annotations_to_instances(
-                objs, image_shape, mask_format="bitmask"
-            )
-            record["instances"] = utils.filter_empty_instances(instances)
-
-
+            record["instances"] = None
+        else:
+            if self.data_mapper:
+                image_shape = im.shape[:2]
+                instances = utils.annotations_to_instances(
+                    objs, image_shape, mask_format="bitmask"
+                )
+                record["instances"] = utils.filter_empty_instances(instances)
         return record
 
     def __len__(self):
