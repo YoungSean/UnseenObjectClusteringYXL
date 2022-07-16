@@ -99,7 +99,7 @@ class OCIDObject(data.Dataset, datasets.imdb):
         sample = {'image_color': image_blob,
                   'image_color_bgr': im_tensor_bgr,
                   'label': label_blob,
-                  'filename': filename[index+5:]}
+                  'file_name': Path(self._ocid_object_path) / filename[index+5:]}
 
         # Depth image
         if cfg.INPUT == 'DEPTH' or cfg.INPUT == 'RGBD':

@@ -50,7 +50,7 @@ model.eval()
 
 
 dataset = TableTopDataset(data_mapper=True,eval=True)
-#dataset = OCIDObject(image_set="test")
+ocid_dataset = OCIDObject(image_set="test")
 # print(len(dataset))
 #sample = dataset[3]
 #gt = sample["label"].squeeze().numpy()
@@ -72,12 +72,12 @@ metadata = MetadataCatalog.get("tabletop_object_train")
 
 # Reference: https://www.reddit.com/r/computervision/comments/jb6b18/get_binary_mask_image_from_detectron2/
 
-def get_confident_instances(outputs, score=0.8):
+def get_confident_instances(outputs, score=0.9):
     """
     Extract objects with high prediction scores.
     """
     instances = outputs["instances"]
-    confident_instances = instances[instances.scores > 0.8]
+    confident_instances = instances[instances.scores > score]
     return confident_instances
 
 def combine_masks(instances):
@@ -90,6 +90,9 @@ def combine_masks(instances):
     num, h, w = mask.shape
     bin_mask = np.zeros((h, w))
     num_instance = len(mask)
+    # if there is not any instance, just return a mask full of 0s.
+    if num_instance == 0:
+        return bin_mask
 
     for m, object_label in zip(mask, range(2, 2+num_instance)):
         label_pos = np.nonzero(m)
@@ -100,27 +103,23 @@ def combine_masks(instances):
 
 img_path = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/rgb_00003.jpeg"
 predictor = DefaultPredictor(cfg)
-def visualizeResult(sample, predictor):
-    #print(sample)
-
+def test_sample(sample, predictor, visualization = False, confident_score=0.9):
     im = cv2.imread(sample["file_name"])
-    #im = sample["image"]
     gt = sample["label"].squeeze().numpy()
+    print(gt)
     # im = cv2.imread("/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/ocid001.png")
-
     outputs = predictor(im)
-
-    v = Visualizer(im[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
-    confident_instances = get_confident_instances(outputs, score=0.8)
+    confident_instances = get_confident_instances(outputs, score=confident_score)
     binary_mask = combine_masks(confident_instances)
-    #print(np.unique(binary_mask))
-    #print(np.unique(gt))
     metrics = multilabel_metrics(binary_mask, gt)
     print(f"metrics: ", metrics)
-    #out = v.draw_instance_predictions(confident_instances.to("cpu"))
-    #cv2.imshow("image", out.get_image()[:, :, ::-1])
-    #cv2.waitKey(0)
-    #cv2.destroyAllWindows()
+    ## Visualize the result
+    if visualization:
+        v = Visualizer(im[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
+        out = v.draw_instance_predictions(confident_instances.to("cpu"))
+        cv2.imshow("image", out.get_image()[:, :, ::-1])
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
     return metrics
 
 # visualizeResult(img_path, gt)
@@ -178,7 +177,7 @@ checkpointer.load(cfg.MODEL.WEIGHTS)
 # if use_my_dataset:
 #     dataset = TableTopDataset(image_set="train", data_mapper=True, eval=True)#, data_mapper=DatasetMapper(cfg, is_train=True))
 #     dataloader = DataLoader(dataset, batch_size=1)
-def get_all_inputs_outputs():
+def get_all_inputs_outputs(dataloader):
     for data in dataloader:
         filter_batch = []
         if data["annotations"]:
@@ -197,12 +196,13 @@ def get_all_inputs_outputs():
 # for inputs, outputs in get_all_inputs_outputs():
 #   evaluator.process(inputs, outputs)
 # eval_results = evaluator.evaluate().
-metrics_all = []
-for i in range(len(dataset)):
-    metrics = visualizeResult(dataset[i], predictor)
-    metrics_all.append(metrics)
 
-def get_result(metrics_all):
+
+def test_dataset(dataset, predictor):
+    metrics_all = []
+    for i in range(len(dataset)):
+        metrics = test_sample(dataset[i], predictor)
+        metrics_all.append(metrics)
     print('========================================================')
     result = {}
     num = len(metrics_all)
@@ -228,4 +228,10 @@ def get_result(metrics_all):
     print(result)
     print('====================END=================================')
 
-get_result(metrics_all)
+# test_dataset(dataset, predictor)
+# test_sample(dataset[0], predictor, visualization=True)
+
+# test_sample(ocid_dataset[0], predictor, visualization=True)
+print(ocid_dataset[0]["file_name"])
+#print(cv2.imread(ocid_dataset[0]["file_name"]))
+#print(cv2.imread("/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/ocid001.png"))

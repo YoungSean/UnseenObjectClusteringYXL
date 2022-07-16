@@ -359,9 +359,9 @@ class TableTopDataset(data.Dataset, datasets.imdb):
             objs.append(obj)
         record["annotations"] = objs
 
-        # if self.eval:
-        label_blob = torch.from_numpy(foreground_labels).unsqueeze(0)
-        record["label"] = label_blob
+        if self.eval:
+            label_blob = torch.from_numpy(foreground_labels).unsqueeze(0)
+            record["label"] = label_blob
         # record["image"] = torch.permute(torch.from_numpy(im), (2, 0, 1))
 
         if not objs:
