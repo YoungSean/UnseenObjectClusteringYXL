@@ -99,7 +99,8 @@ class OCIDObject(data.Dataset, datasets.imdb):
         sample = {'image_color': image_blob,
                   'image_color_bgr': im_tensor_bgr,
                   'label': label_blob,
-                  'file_name': Path(self._ocid_object_path) / filename[index+5:]}
+                  'filename': filename[index+5:],
+                  'file_name': str(self.image_paths[idx])}
 
         # Depth image
         if cfg.INPUT == 'DEPTH' or cfg.INPUT == 'RGBD':
@@ -123,4 +124,6 @@ class OCIDObject(data.Dataset, datasets.imdb):
         """
         Return the default path where ocid_object is expected to be installed.
         """
-        return os.path.join(datasets.ROOT_DIR, 'data', 'OCID')
+        # return os.path.join(datasets.ROOT_DIR, 'data', 'OCID')
+
+        return os.path.join(datasets.ROOT_DIR, 'data', 'OCID_demo')

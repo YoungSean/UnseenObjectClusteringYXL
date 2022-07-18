@@ -106,13 +106,11 @@ predictor = DefaultPredictor(cfg)
 def test_sample(sample, predictor, visualization = False, confident_score=0.9):
     im = cv2.imread(sample["file_name"])
     gt = sample["label"].squeeze().numpy()
-    print(gt)
-    # im = cv2.imread("/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/ocid001.png")
     outputs = predictor(im)
     confident_instances = get_confident_instances(outputs, score=confident_score)
     binary_mask = combine_masks(confident_instances)
     metrics = multilabel_metrics(binary_mask, gt)
-    print(f"metrics: ", metrics)
+    # print(f"metrics: ", metrics)
     ## Visualize the result
     if visualization:
         v = Visualizer(im[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
@@ -232,6 +230,4 @@ def test_dataset(dataset, predictor):
 # test_sample(dataset[0], predictor, visualization=True)
 
 # test_sample(ocid_dataset[0], predictor, visualization=True)
-print(ocid_dataset[0]["file_name"])
-#print(cv2.imread(ocid_dataset[0]["file_name"]))
-#print(cv2.imread("/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/ocid001.png"))
+test_dataset(ocid_dataset, predictor)
