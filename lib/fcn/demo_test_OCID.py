@@ -1,18 +1,22 @@
 import sys
 import os
+#print(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'Mask2Former'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'datasets'))
+#print(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.data import MetadataCatalog, DatasetCatalog, build_detection_train_loader, build_detection_test_loader
 from detectron2.evaluation import DatasetEvaluator, inference_on_dataset, DatasetEvaluators
 from detectron2.utils.visualizer import Visualizer
-from Mask2Former.mask2former import add_maskformer2_config
+# from Mask2Former.mask2former import add_maskformer2_config
+from mask2former import add_maskformer2_config
 from datasets import OCIDObject
-print(os.path.dirname(__file__))
-sys.path.append(os.path.dirname(__file__))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'datasets'))
-print(os.path.join(os.path.dirname(__file__), '..', '..'))
+from tqdm import tqdm, trange
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -34,8 +38,12 @@ from detectron2.modeling import build_model
 from detectron2.projects.deeplab import add_deeplab_config
 from detectron2.engine import DefaultPredictor
 from detectron2.config import get_cfg
-from Mask2Former.tabletop_config import add_tabletop_config
+from tabletop_config import add_tabletop_config
 from torch.utils.data import DataLoader
+# ignore some warnings
+import warnings
+warnings.simplefilter("ignore", UserWarning)
+
 # build model
 cfg = get_cfg()
 add_deeplab_config(cfg)
@@ -44,7 +52,8 @@ cfg_file = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/configs/coco/inst
 #cfg_file = "configs/cityscapes/instance-segmentation/Base-Cityscapes-InstanceSegmentation.yaml"
 cfg.merge_from_file(cfg_file)
 add_tabletop_config(cfg)
-cfg.MODEL.WEIGHTS = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/output/model_final.pth"
+#cfg.MODEL.WEIGHTS = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/output/model_final.pth"
+cfg.MODEL.WEIGHTS = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/output/model_16_epochs.pth"
 model = build_model(cfg)
 model.eval()
 
@@ -196,10 +205,13 @@ def get_all_inputs_outputs(dataloader):
 # eval_results = evaluator.evaluate().
 
 
-def test_dataset(dataset, predictor):
+def test_dataset(dataset, predictor, visualization=False):
     metrics_all = []
-    for i in range(len(dataset)):
-        metrics = test_sample(dataset[i], predictor)
+    # for i in trange(len(dataset)):
+    #     metrics = test_sample(dataset[i], predictor)
+    #     metrics_all.append(metrics)
+    for i in tqdm(dataset):
+        metrics = test_sample(i, predictor, visualization=visualization)
         metrics_all.append(metrics)
     print('========================================================')
     result = {}
