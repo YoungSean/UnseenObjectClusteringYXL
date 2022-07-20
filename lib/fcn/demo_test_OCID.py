@@ -48,12 +48,13 @@ warnings.simplefilter("ignore", UserWarning)
 cfg = get_cfg()
 add_deeplab_config(cfg)
 add_maskformer2_config(cfg)
-cfg_file = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/configs/coco/instance-segmentation/maskformer2_R50_bs16_50ep.yaml"
+#cfg_file = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/configs/coco/instance-segmentation/maskformer2_R50_bs16_50ep.yaml"
+cfg_file = "../../Mask2Former/configs/coco/instance-segmentation/maskformer2_R50_bs16_50ep.yaml"
 #cfg_file = "configs/cityscapes/instance-segmentation/Base-Cityscapes-InstanceSegmentation.yaml"
 cfg.merge_from_file(cfg_file)
 add_tabletop_config(cfg)
 #cfg.MODEL.WEIGHTS = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/output/model_final.pth"
-cfg.MODEL.WEIGHTS = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/output/model_16_epochs.pth"
+cfg.MODEL.WEIGHTS = "../../Mask2Former/output/model_16_epochs.pth"
 model = build_model(cfg)
 model.eval()
 
@@ -110,7 +111,7 @@ def combine_masks(instances):
     # cv2.imwrite(filename, bin_mask)
     return bin_mask
 
-img_path = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/rgb_00003.jpeg"
+#img_path = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/rgb_00003.jpeg"
 predictor = DefaultPredictor(cfg)
 def test_sample(sample, predictor, visualization = False, confident_score=0.9):
     im = cv2.imread(sample["file_name"])
@@ -124,8 +125,11 @@ def test_sample(sample, predictor, visualization = False, confident_score=0.9):
     if visualization:
         v = Visualizer(im[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
         out = v.draw_instance_predictions(confident_instances.to("cpu"))
-        cv2.imshow("image", out.get_image()[:, :, ::-1])
+        visual_result = out.get_image()[:, :, ::-1]
+        cv2.imwrite(sample["file_name"][-6:-3]+"pred.png", visual_result)
+        cv2.imshow("image", visual_result)
         cv2.waitKey(0)
+        # cv2.waitKey(100000)
         cv2.destroyAllWindows()
     return metrics
 
@@ -205,15 +209,16 @@ def get_all_inputs_outputs(dataloader):
 # eval_results = evaluator.evaluate().
 
 
-def test_dataset(dataset, predictor, visualization=False):
+def test_dataset(dataset, predictor, visualization=False, confident_score=0.9):
     metrics_all = []
-    # for i in trange(len(dataset)):
-    #     metrics = test_sample(dataset[i], predictor)
-    #     metrics_all.append(metrics)
-    for i in tqdm(dataset):
-        metrics = test_sample(i, predictor, visualization=visualization)
+    for i in trange(len(dataset)):
+        metrics = test_sample(dataset[i], predictor, visualization=visualization, confident_score=confident_score)
         metrics_all.append(metrics)
+    # for i in tqdm(dataset):
+    #     metrics = test_sample(i, predictor, visualization=visualization)
+    #     metrics_all.append(metrics)
     print('========================================================')
+    print("Mask threshold: ", confident_score)
     result = {}
     num = len(metrics_all)
     print('%d images' % num)
@@ -241,5 +246,5 @@ def test_dataset(dataset, predictor, visualization=False):
 # test_dataset(dataset, predictor)
 # test_sample(dataset[0], predictor, visualization=True)
 
-# test_sample(ocid_dataset[0], predictor, visualization=True)
+# test_sample(ocid_dataset[15], predictor, visualization=True)
 test_dataset(ocid_dataset, predictor)
