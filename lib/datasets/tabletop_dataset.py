@@ -317,6 +317,7 @@ class TableTopDataset(data.Dataset, datasets.imdb):
         # boxes.shape: [num_instances x 4], binary_masks.shape: [num_instances x H x W], labels.shape: [num_instances]
 
         # BGR image
+        # print(cfg.INPUT)
         filename = os.path.join(scene_dir, 'rgb_%05d.jpeg' % view_num)
         im = cv2.imread(filename)
 
@@ -347,6 +348,7 @@ class TableTopDataset(data.Dataset, datasets.imdb):
         record["image_id"] = idx
         record["height"] = self.params['img_height']
         record["width"] = self.params['img_width']
+        record["depth"] = torch.permute(torch.from_numpy(xyz_img), (2,0,1))
         objs = []
         # get annotations
         for box, mask, label in zip(boxes, binary_masks, labels):
@@ -359,9 +361,9 @@ class TableTopDataset(data.Dataset, datasets.imdb):
             objs.append(obj)
         record["annotations"] = objs
 
-        if self.eval:
-            label_blob = torch.from_numpy(foreground_labels).unsqueeze(0)
-            record["label"] = label_blob
+
+        label_blob = torch.from_numpy(foreground_labels).unsqueeze(0)
+        record["labels"] = label_blob
         # record["image"] = torch.permute(torch.from_numpy(im), (2, 0, 1))
 
         if not objs:

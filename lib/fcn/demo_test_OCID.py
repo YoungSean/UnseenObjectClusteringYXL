@@ -14,7 +14,7 @@ from detectron2.evaluation import DatasetEvaluator, inference_on_dataset, Datase
 from detectron2.utils.visualizer import Visualizer
 # from Mask2Former.mask2former import add_maskformer2_config
 from mask2former import add_maskformer2_config
-from datasets import OCIDObject
+from datasets import OCIDDataset
 from tqdm import tqdm, trange
 
 import torch
@@ -53,14 +53,16 @@ cfg_file = "../../Mask2Former/configs/coco/instance-segmentation/maskformer2_R50
 #cfg_file = "configs/cityscapes/instance-segmentation/Base-Cityscapes-InstanceSegmentation.yaml"
 cfg.merge_from_file(cfg_file)
 add_tabletop_config(cfg)
+cfg.INPUT.INPUT_IMAGE = 'DEPTH'
+cfg.SOLVER.IMS_PER_BATCH = 1
 #cfg.MODEL.WEIGHTS = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/output/model_final.pth"
-cfg.MODEL.WEIGHTS = "../../Mask2Former/output/model_16_epochs.pth"
-model = build_model(cfg)
-model.eval()
+cfg.MODEL.WEIGHTS = "../../Mask2Former/depth_output/model_final.pth"
+# model = build_model(cfg)
+# model.eval()
 
 
 dataset = TableTopDataset(data_mapper=True,eval=True)
-ocid_dataset = OCIDObject(image_set="test")
+ocid_dataset = OCIDDataset(image_set="test")
 # print(len(dataset))
 #sample = dataset[3]
 #gt = sample["label"].squeeze().numpy()
@@ -112,21 +114,58 @@ def combine_masks(instances):
     return bin_mask
 
 #img_path = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/rgb_00003.jpeg"
-predictor = DefaultPredictor(cfg)
+class Predictor_RGBD(DefaultPredictor):
+
+    def __call__(self, original_image):
+        """
+        Args:
+            original_image (np.ndarray): an image of shape (H, W, C) (in BGR order).
+
+        Returns:
+            predictions (dict):
+                the output of the model for one image only.
+                See :doc:`/tutorials/models` for details about the format.
+        """
+        with torch.no_grad():  # https://github.com/sphinx-doc/sphinx/issues/4258
+            # Apply pre-processing to image.
+            height, width = 480, 640
+            if self.cfg.INPUT.INPUT_IMAGE == "DEPTH":
+                depth = original_image
+                inputs = {"height": height, "width": width, "depth": depth}
+            else:
+                if self.input_format == "RGB":
+                    # whether the model expects BGR inputs or RGB
+                    original_image = original_image[:, :, ::-1]
+                image = self.aug.get_transform(original_image).apply_image(original_image)
+                image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+                inputs = {"image": image, "height": height, "width": width}
+
+            predictions = self.model([inputs])[0]
+            return predictions
+
+
+predictor = Predictor_RGBD(cfg)
 def test_sample(sample, predictor, visualization = False, confident_score=0.9):
     im = cv2.imread(sample["file_name"])
-    gt = sample["label"].squeeze().numpy()
-    outputs = predictor(im)
+    if "label" in sample.keys():
+        gt = sample["label"].squeeze().numpy()
+    else:
+        gt = sample["labels"].squeeze().numpy()
+
+    if cfg.INPUT.INPUT_IMAGE == "DEPTH":
+        outputs = predictor(sample["depth"])
+    else:
+        outputs = predictor(im)
     confident_instances = get_confident_instances(outputs, score=confident_score)
     binary_mask = combine_masks(confident_instances)
     metrics = multilabel_metrics(binary_mask, gt)
-    # print(f"metrics: ", metrics)
+    #print(f"metrics: ", metrics)
     ## Visualize the result
     if visualization:
         v = Visualizer(im[:, :, ::-1], MetadataCatalog.get(cfg.DATASETS.TRAIN[0]), scale=1.2)
         out = v.draw_instance_predictions(confident_instances.to("cpu"))
         visual_result = out.get_image()[:, :, ::-1]
-        cv2.imwrite(sample["file_name"][-6:-3]+"pred.png", visual_result)
+        # cv2.imwrite(sample["file_name"][-6:-3]+"pred.png", visual_result)
         cv2.imshow("image", visual_result)
         cv2.waitKey(0)
         # cv2.waitKey(100000)
@@ -175,15 +214,15 @@ class ObjectEvaluator(DatasetEvaluator):
         print('====================Refined=============================')
 
 cfg.DATASETS.TEST = ("tabletop_object_train", )
-cfg = cfg.clone()  # cfg can be modified by model
-model = build_model(cfg)
-model.eval()
+# cfg = cfg.clone()  # cfg can be modified by model
+# model = build_model(cfg)
+# model.eval()
 
 if len(cfg.DATASETS.TEST):
     metadata = MetadataCatalog.get(cfg.DATASETS.TEST[0])
 
-checkpointer = DetectionCheckpointer(model)
-checkpointer.load(cfg.MODEL.WEIGHTS)
+# checkpointer = DetectionCheckpointer(model)
+# checkpointer.load(cfg.MODEL.WEIGHTS)
 
 # if use_my_dataset:
 #     dataset = TableTopDataset(image_set="train", data_mapper=True, eval=True)#, data_mapper=DatasetMapper(cfg, is_train=True))
@@ -244,7 +283,8 @@ def test_dataset(dataset, predictor, visualization=False, confident_score=0.9):
     print('====================END=================================')
 
 # test_dataset(dataset, predictor)
-# test_sample(dataset[0], predictor, visualization=True)
+# test_sample(dataset[5], predictor, visualization=True)
 
-# test_sample(ocid_dataset[15], predictor, visualization=True)
+#test_sample(ocid_dataset[4], predictor, visualization=True)
 test_dataset(ocid_dataset, predictor)
+# print(ocid_dataset[4])
