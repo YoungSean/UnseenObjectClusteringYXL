@@ -56,12 +56,12 @@ add_tabletop_config(cfg)
 cfg.INPUT.INPUT_IMAGE = 'DEPTH'
 cfg.SOLVER.IMS_PER_BATCH = 1
 #cfg.MODEL.WEIGHTS = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/output/model_final.pth"
-cfg.MODEL.WEIGHTS = "../../Mask2Former/depth_output/model_final.pth"
+cfg.MODEL.WEIGHTS = "../../Mask2Former/depth_output/model_0007999.pth"
 # model = build_model(cfg)
 # model.eval()
 
 
-dataset = TableTopDataset(data_mapper=True,eval=True)
+# dataset = TableTopDataset(data_mapper=True,eval=True)
 ocid_dataset = OCIDDataset(image_set="test")
 # print(len(dataset))
 #sample = dataset[3]
@@ -144,7 +144,7 @@ class Predictor_RGBD(DefaultPredictor):
             return predictions
 
 
-predictor = Predictor_RGBD(cfg)
+# predictor = Predictor_RGBD(cfg)
 def test_sample(sample, predictor, visualization = False, confident_score=0.9):
     im = cv2.imread(sample["file_name"])
     if "label" in sample.keys():
@@ -258,6 +258,7 @@ def test_dataset(dataset, predictor, visualization=False, confident_score=0.9):
     #     metrics_all.append(metrics)
     print('========================================================')
     print("Mask threshold: ", confident_score)
+    print("weight: ", cfg.MODEL.WEIGHTS)
     result = {}
     num = len(metrics_all)
     print('%d images' % num)
@@ -286,5 +287,29 @@ def test_dataset(dataset, predictor, visualization=False, confident_score=0.9):
 # test_sample(dataset[5], predictor, visualization=True)
 
 #test_sample(ocid_dataset[4], predictor, visualization=True)
-test_dataset(ocid_dataset, predictor)
+# test_dataset(ocid_dataset, predictor, confident_score=0.9)
+# test_dataset(ocid_dataset, predictor, confident_score=0.7)
+# test_dataset(ocid_dataset, predictor, confident_score=0.6)
 # print(ocid_dataset[4])
+
+#cfg.MODEL.WEIGHTS = "../../Mask2Former/depth_output/model_0007999.pth"
+def test_dataset_with_weight(weight_path, cfg, confident_score=0.9):
+    cfg.MODEL.WEIGHTS = weight_path
+    predictor = Predictor_RGBD(cfg)
+    test_dataset(ocid_dataset, predictor, confident_score=confident_score)
+
+test_dataset_with_weight("../../Mask2Former/depth_output/model_0109999.pth", cfg, confident_score=0.9)
+#test_dataset_with_weight("../../Mask2Former/depth_output/model_0009999.pth", cfg, confident_score=0.5)
+test_dataset_with_weight("../../Mask2Former/depth_output/model_0109999.pth", cfg, confident_score=0.5)
+
+test_dataset_with_weight("../../Mask2Former/depth_output/model_0119999.pth", cfg, confident_score=0.5)
+#test_dataset_with_weight("../../Mask2Former/depth_output/model_0009999.pth", cfg, confident_score=0.5)
+test_dataset_with_weight("../../Mask2Former/depth_output/model_0129999.pth", cfg, confident_score=0.5)
+
+test_dataset_with_weight("../../Mask2Former/depth_output/model_0139999.pth", cfg, confident_score=0.5)
+#test_dataset_with_weight("../../Mask2Former/depth_output/model_0009999.pth", cfg, confident_score=0.5)
+test_dataset_with_weight("../../Mask2Former/depth_output/model_0149999.pth", cfg, confident_score=0.5)
+
+test_dataset_with_weight("../../Mask2Former/depth_output/model_0159999.pth", cfg, confident_score=0.5)
+#test_dataset_with_weight("../../Mask2Former/depth_output/model_0009999.pth", cfg, confident_score=0.5)
+test_dataset_with_weight("../../Mask2Former/depth_output/model_0169999.pth", cfg, confident_score=0.5)
