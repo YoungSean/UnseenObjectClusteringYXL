@@ -50,27 +50,16 @@ add_deeplab_config(cfg)
 add_maskformer2_config(cfg)
 #cfg_file = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/configs/coco/instance-segmentation/maskformer2_R50_bs16_50ep.yaml"
 cfg_file = "../../Mask2Former/configs/coco/instance-segmentation/maskformer2_R50_bs16_50ep.yaml"
-#cfg_file = "configs/cityscapes/instance-segmentation/Base-Cityscapes-InstanceSegmentation.yaml"
 cfg.merge_from_file(cfg_file)
 add_tabletop_config(cfg)
 # cfg.INPUT.INPUT_IMAGE = 'DEPTH'
 cfg.SOLVER.IMS_PER_BATCH = 1
 #cfg.MODEL.WEIGHTS = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/output/model_final.pth"
-#cfg.MODEL.WEIGHTS = "../../Mask2Former/depth_output/model_0007999.pth"
-# model = build_model(cfg)
-# model.eval()
+
 
 
 dataset = TableTopDataset(data_mapper=True,eval=True)
 ocid_dataset = OCIDDataset(image_set="test")
-# print(len(dataset))
-#sample = dataset[3]
-#gt = sample["label"].squeeze().numpy()
-# with torch.no_grad():
-#   prediction = model(sample)
-#
-# outputs = prediction[0]
-
 
 use_my_dataset = True
 #DatasetCatalog.register("tabletop_object_train", getTabletopDataset)
@@ -115,7 +104,6 @@ def combine_masks(instances):
     # cv2.imwrite(filename, bin_mask)
     return bin_mask
 
-#img_path = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/rgb_00003.jpeg"
 class Predictor_RGBD(DefaultPredictor):
 
     def __call__(self, original_image):
@@ -145,8 +133,6 @@ class Predictor_RGBD(DefaultPredictor):
             predictions = self.model([inputs])[0]
             return predictions
 
-
-# predictor = Predictor_RGBD(cfg)
 def test_sample(sample, predictor, visualization = False, topk=True, confident_score=0.9):
     im = cv2.imread(sample["file_name"])
     if "label" in sample.keys():
@@ -173,52 +159,6 @@ def test_sample(sample, predictor, visualization = False, topk=True, confident_s
         # cv2.waitKey(100000)
         cv2.destroyAllWindows()
     return metrics
-
-# visualizeResult(img_path, gt)
-
-class ObjectEvaluator(DatasetEvaluator):
-
-    def reset(self):
-        self.metrics_all = []
-
-    def process(self, inputs, outputs):
-        for input, output in zip(inputs, outputs):
-            gt = input["label"].squeeze().numpy()
-            confident_instances = get_confident_instances(outputs, score=0.8)
-            binary_mask = combine_masks(confident_instances)
-            metrics = multilabel_metrics(binary_mask, gt)
-            self.metrics_all.append(metrics)
-
-    def evaluate(self):
-        print('========================================================')
-        result = {}
-        num = len(self.metrics_all)
-        print('%d images' % num)
-        print('========================================================')
-        for metrics in self.metrics_all:
-            for k in metrics.keys():
-                result[k] = result.get(k, 0) + metrics[k]
-
-        for k in sorted(result.keys()):
-            result[k] /= num
-            print('%s: %f' % (k, result[k]))
-
-        print('%.6f' % (result['Objects Precision']))
-        print('%.6f' % (result['Objects Recall']))
-        print('%.6f' % (result['Objects F-measure']))
-        print('%.6f' % (result['Boundary Precision']))
-        print('%.6f' % (result['Boundary Recall']))
-        print('%.6f' % (result['Boundary F-measure']))
-        print('%.6f' % (result['obj_detected_075_percentage']))
-
-        print('========================================================')
-        print(result)
-        print('====================Refined=============================')
-
-cfg.DATASETS.TEST = ("tabletop_object_train", )
-
-if len(cfg.DATASETS.TEST):
-    metadata = MetadataCatalog.get(cfg.DATASETS.TEST[0])
 
 def test_dataset(dataset, predictor, visualization=False, topk=True, confident_score=0.9):
     metrics_all = []
@@ -255,24 +195,32 @@ def test_dataset(dataset, predictor, visualization=False, topk=True, confident_s
     print(result)
     print('====================END=================================')
 
+def test_dataset_with_weight(weight_path, cfg, dataset=ocid_dataset,topk=True, confident_score=0.9):
+    cfg.MODEL.WEIGHTS = weight_path
+    predictor = Predictor_RGBD(cfg)
+    test_dataset(dataset, predictor, topk=topk, confident_score=confident_score)
+
+def test_dataset_with_weight(weight_path, cfg, sample,topk=True, confident_score=0.9):
+    cfg.MODEL.WEIGHTS = weight_path
+    predictor = Predictor_RGBD(cfg)
+    test_dataset(sample, predictor, topk=topk, confident_score=confident_score)
+
 # test_dataset(dataset, predictor)
 # test_sample(dataset[5], predictor, visualization=True)
-weight_path = "../../Mask2Former/output_RGB/model_final.pth"
-cfg.MODEL.WEIGHTS = weight_path
-predictor = Predictor_RGBD(cfg)
-test_sample(ocid_dataset[4], predictor, visualization=True)
+# weight_path = "../../Mask2Former/output_RGB/model_final.pth"
+# cfg.MODEL.WEIGHTS = weight_path
+# predictor = Predictor_RGBD(cfg)
+# test_sample(ocid_dataset[4], predictor, visualization=True)
 # test_dataset(ocid_dataset, predictor, confident_score=0.9)
 # test_dataset(ocid_dataset, predictor, confident_score=0.7)
 #test_dataset(dataset, predictor)
 # print(ocid_dataset[4])
 
 #cfg.MODEL.WEIGHTS = "../../Mask2Former/depth_output/model_0007999.pth"
-def test_dataset_with_weight(weight_path, cfg, topk=True, confident_score=0.9):
-    cfg.MODEL.WEIGHTS = weight_path
-    predictor = Predictor_RGBD(cfg)
-    test_dataset(ocid_dataset, predictor, topk=topk)
+ocid_max_num_object = 0
+#print(ocid_dataset.max_num_object)
 
-def test_sample_with_weight(weight_path, cfg, topk=True, confident_score=0.9):
-    cfg.MODEL.WEIGHTS = weight_path
-    predictor = Predictor_RGBD(cfg)
-    test_dataset(ocid_dataset, predictor, topk=topk)
+for i in tqdm(ocid_dataset):
+    if ocid_dataset.max_num_object > ocid_max_num_object:
+        ocid_max_num_object = ocid_dataset.max_num_object
+print("ocid max num object", ocid_max_num_object)

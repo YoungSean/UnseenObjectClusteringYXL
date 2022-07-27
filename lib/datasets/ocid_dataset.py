@@ -36,6 +36,7 @@ class OCIDDataset(data.Dataset, datasets.imdb):
 
         print('%d images for dataset %s' % (len(self.image_paths), self._name))
         self._size = len(self.image_paths)
+        self.max_num_object = 0
         assert os.path.exists(self._ocid_object_path), \
                 'ocid_object path does not exist: {}'.format(self._ocid_object_path)
 
@@ -61,6 +62,9 @@ class OCIDDataset(data.Dataset, datasets.imdb):
         """
         # Find the unique (nonnegative) foreground_labels, map them to {0, ..., K-1}
         unique_nonnegative_indices = np.unique(foreground_labels)
+        object_num = unique_nonnegative_indices.shape[0] - 1
+        if object_num > self.max_num_object:
+            self.max_num_object = object_num
         mapped_labels = foreground_labels.copy()
         for k in range(unique_nonnegative_indices.shape[0]):
             mapped_labels[foreground_labels == unique_nonnegative_indices[k]] = k
@@ -129,3 +133,6 @@ class OCIDDataset(data.Dataset, datasets.imdb):
         #return os.path.join(datasets.ROOT_DIR, 'data', 'OCID')
 
         return os.path.join(datasets.ROOT_DIR, 'data', 'OCID_demo')
+
+    def get_max_num_obect(self):
+        return self.max_num_object
