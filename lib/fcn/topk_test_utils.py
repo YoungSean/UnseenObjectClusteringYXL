@@ -45,31 +45,34 @@ import warnings
 warnings.simplefilter("ignore", UserWarning)
 
 # build model
-cfg = get_cfg()
-add_deeplab_config(cfg)
-add_maskformer2_config(cfg)
-#cfg_file = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/configs/coco/instance-segmentation/maskformer2_R50_bs16_50ep.yaml"
-cfg_file = "../../Mask2Former/configs/coco/instance-segmentation/maskformer2_R50_bs16_50ep.yaml"
-cfg.merge_from_file(cfg_file)
-add_tabletop_config(cfg)
-# cfg.INPUT.INPUT_IMAGE = 'DEPTH'
-cfg.SOLVER.IMS_PER_BATCH = 1
-# cfg.MODEL.WEIGHTS = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/output_RGB/model_0004999.pth"
+# cfg = get_cfg()
+# add_deeplab_config(cfg)
+# add_maskformer2_config(cfg)
+# #cfg_file = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/configs/coco/instance-segmentation/maskformer2_R50_bs16_50ep.yaml"
+# cfg_file = "../../Mask2Former/configs/coco/instance-segmentation/maskformer2_R50_bs16_50ep.yaml"
+# cfg.merge_from_file(cfg_file)
+# add_tabletop_config(cfg)
+# # cfg.INPUT.INPUT_IMAGE = 'DEPTH'
+# cfg.SOLVER.IMS_PER_BATCH = 1
+# # cfg.MODEL.WEIGHTS = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/output_RGB/model_0004999.pth"
+# cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES = 1
 
 
-
-dataset = TableTopDataset(data_mapper=True,eval=True)
-ocid_dataset = OCIDDataset(image_set="test")
-
-use_my_dataset = True
-#DatasetCatalog.register("tabletop_object_train", getTabletopDataset)
-for d in ["train", "test"]:
-    if use_my_dataset:
-        DatasetCatalog.register("tabletop_object_" + d, lambda d=d: TableTopDataset(d))
-    else:
-        DatasetCatalog.register("tabletop_object_" + d, lambda d=d: getTabletopDataset(d))
-    MetadataCatalog.get("tabletop_object_" + d).set(thing_classes=['object'])
-metadata = MetadataCatalog.get("tabletop_object_train")
+# dataset = TableTopDataset(data_mapper=True,eval=True)
+# ocid_dataset = OCIDDataset(image_set="test")
+#
+# use_my_dataset = True
+# #DatasetCatalog.register("tabletop_object_train", getTabletopDataset)
+# for d in ["train", "test"]:
+#     if use_my_dataset:
+#         DatasetCatalog.register("tabletop_object_" + d, lambda d=d: TableTopDataset(d))
+#     else:
+#         DatasetCatalog.register("tabletop_object_" + d, lambda d=d: getTabletopDataset(d))
+#     if cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES == 1:
+#         MetadataCatalog.get("tabletop_object_" + d).set(thing_classes=['object'])
+#     else:
+#         MetadataCatalog.get("tabletop_object_" + d).set(thing_classes=['background', 'object'])
+# metadata = MetadataCatalog.get("tabletop_object_train")
 
 # Reference: https://www.reddit.com/r/computervision/comments/jb6b18/get_binary_mask_image_from_detectron2/
 
@@ -133,7 +136,7 @@ class Predictor_RGBD(DefaultPredictor):
             predictions = self.model([inputs])[0]
             return predictions
 
-def test_sample(sample, predictor, visualization = False, topk=True, confident_score=0.9):
+def test_sample(cfg, sample, predictor, visualization = False, topk=True, confident_score=0.9):
     im = cv2.imread(sample["file_name"])
     if "label" in sample.keys():
         gt = sample["label"].squeeze().numpy()
@@ -160,16 +163,17 @@ def test_sample(sample, predictor, visualization = False, topk=True, confident_s
         cv2.destroyAllWindows()
     return metrics
 
-def test_dataset(dataset, predictor, visualization=False, topk=True, confident_score=0.9):
+def test_dataset(cfg,dataset, predictor, visualization=False, topk=True, confident_score=0.9):
     metrics_all = []
     for i in trange(len(dataset)):
-        metrics = test_sample(dataset[i], predictor, visualization=visualization, topk=topk, confident_score=confident_score)
+        metrics = test_sample(cfg, dataset[i], predictor, visualization=visualization, topk=topk, confident_score=confident_score)
         metrics_all.append(metrics)
     # for i in tqdm(dataset):
     #     metrics = test_sample(i, predictor, visualization=visualization)
     #     metrics_all.append(metrics)
     print('========================================================')
-    print("Mask threshold: ", confident_score)
+    if not topk:
+        print("Mask threshold: ", confident_score)
     print("weight: ", cfg.MODEL.WEIGHTS)
     result = {}
     num = len(metrics_all)
@@ -195,26 +199,30 @@ def test_dataset(dataset, predictor, visualization=False, topk=True, confident_s
     print(result)
     print('====================END=================================')
 
-def test_dataset_with_weight(weight_path, cfg, dataset=ocid_dataset,topk=True, confident_score=0.9):
+def test_dataset_with_weight(weight_path, cfg, dataset,topk=True, confident_score=0.9):
     cfg.MODEL.WEIGHTS = weight_path
     predictor = Predictor_RGBD(cfg)
-    test_dataset(dataset, predictor, topk=topk, confident_score=confident_score)
+    test_dataset(cfg, dataset, predictor, topk=topk, confident_score=confident_score)
 
 def test_dataset_with_weight(weight_path, cfg, sample,topk=True, confident_score=0.9):
     cfg.MODEL.WEIGHTS = weight_path
     predictor = Predictor_RGBD(cfg)
-    test_dataset(sample, predictor, topk=topk, confident_score=confident_score)
+    test_dataset(cfg, sample, predictor, topk=topk, confident_score=confident_score)
 
-
-
-# test_dataset(dataset, predictor)
-
-weight_path = "../../Mask2Former/output_RGB/model_0004999.pth"
-cfg.MODEL.WEIGHTS = weight_path
-predictor = Predictor_RGBD(cfg)
-#test_sample(ocid_dataset[4], predictor, visualization=True)
-# test_dataset(ocid_dataset, predictor, confident_score=0.9)
-test_dataset(ocid_dataset, predictor)
+#
+# use_depth = True
+# if use_depth:
+#     cfg.INPUT.INPUT_IMAGE = 'DEPTH'
+# # test_dataset(dataset, predictor)
+#
+# #weight_path = "../../Mask2Former/output_RGB_n2/model_final.pth"
+# #cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES = 2
+# weight_path = "../../Mask2Former/depth_output_n1_lr5/model_final.pth"
+# cfg.MODEL.WEIGHTS = weight_path
+# predictor = Predictor_RGBD(cfg)
+# test_sample(ocid_dataset[4], predictor, visualization=True)
+# # test_dataset(ocid_dataset, predictor, confident_score=0.9)
+# #test_dataset(ocid_dataset, predictor)
 # test_dataset(dataset, predictor)
 # print(ocid_dataset[4])
 
