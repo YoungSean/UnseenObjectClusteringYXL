@@ -54,7 +54,7 @@ cfg.merge_from_file(cfg_file)
 add_tabletop_config(cfg)
 # cfg.INPUT.INPUT_IMAGE = 'DEPTH'
 cfg.SOLVER.IMS_PER_BATCH = 1
-#cfg.MODEL.WEIGHTS = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/output/model_final.pth"
+# cfg.MODEL.WEIGHTS = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/output_RGB/model_0004999.pth"
 
 
 
@@ -205,22 +205,17 @@ def test_dataset_with_weight(weight_path, cfg, sample,topk=True, confident_score
     predictor = Predictor_RGBD(cfg)
     test_dataset(sample, predictor, topk=topk, confident_score=confident_score)
 
+
+
 # test_dataset(dataset, predictor)
-# test_sample(dataset[5], predictor, visualization=True)
-# weight_path = "../../Mask2Former/output_RGB/model_final.pth"
-# cfg.MODEL.WEIGHTS = weight_path
-# predictor = Predictor_RGBD(cfg)
-# test_sample(ocid_dataset[4], predictor, visualization=True)
+
+weight_path = "../../Mask2Former/output_RGB/model_0004999.pth"
+cfg.MODEL.WEIGHTS = weight_path
+predictor = Predictor_RGBD(cfg)
+#test_sample(ocid_dataset[4], predictor, visualization=True)
 # test_dataset(ocid_dataset, predictor, confident_score=0.9)
-# test_dataset(ocid_dataset, predictor, confident_score=0.7)
-#test_dataset(dataset, predictor)
+test_dataset(ocid_dataset, predictor)
+# test_dataset(dataset, predictor)
 # print(ocid_dataset[4])
 
-#cfg.MODEL.WEIGHTS = "../../Mask2Former/depth_output/model_0007999.pth"
-ocid_max_num_object = 0
-#print(ocid_dataset.max_num_object)
 
-for i in tqdm(ocid_dataset):
-    if ocid_dataset.max_num_object > ocid_max_num_object:
-        ocid_max_num_object = ocid_dataset.max_num_object
-print("ocid max num object", ocid_max_num_object)
