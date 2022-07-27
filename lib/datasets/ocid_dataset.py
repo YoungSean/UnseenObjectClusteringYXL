@@ -126,6 +126,6 @@ class OCIDDataset(data.Dataset, datasets.imdb):
         """
         Return the default path where ocid_object is expected to be installed.
         """
-        return os.path.join(datasets.ROOT_DIR, 'data', 'OCID')
+        #return os.path.join(datasets.ROOT_DIR, 'data', 'OCID')
 
-        #return os.path.join(datasets.ROOT_DIR, 'data', 'OCID_demo')
+        return os.path.join(datasets.ROOT_DIR, 'data', 'OCID_demo')
