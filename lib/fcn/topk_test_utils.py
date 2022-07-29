@@ -76,13 +76,18 @@ warnings.simplefilter("ignore", UserWarning)
 
 # Reference: https://www.reddit.com/r/computervision/comments/jb6b18/get_binary_mask_image_from_detectron2/
 
-def get_confident_instances(outputs, topk=True, score=0.9):
+def get_confident_instances(outputs, topk=True, score=0.9, num_class=2):
     """
     Extract objects with high prediction scores.
     """
     instances = outputs["instances"]
     if topk:
-        return instances
+        # we need to remove background predictions
+        # keep only object class
+        if num_class==2:
+            return instances[instances.pred_classes == 1]
+        else:
+            return instances
     confident_instances = instances[instances.scores > score]
     return confident_instances
 
@@ -147,7 +152,7 @@ def test_sample(cfg, sample, predictor, visualization = False, topk=True, confid
         outputs = predictor(sample["depth"])
     else:
         outputs = predictor(im)
-    confident_instances = get_confident_instances(outputs, topk=topk, score=confident_score)
+    confident_instances = get_confident_instances(outputs, topk=topk, score=confident_score, num_class=cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES)
     binary_mask = combine_masks(confident_instances)
     metrics = multilabel_metrics(binary_mask, gt)
     #print(f"metrics: ", metrics)

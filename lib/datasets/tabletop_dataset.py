@@ -348,7 +348,8 @@ class TableTopDataset(data.Dataset, datasets.imdb):
         record["image_id"] = idx
         record["height"] = self.params['img_height']
         record["width"] = self.params['img_width']
-        record["depth"] = torch.permute(torch.from_numpy(xyz_img), (2,0,1))
+        record["depth"] = torch.as_tensor(np.ascontiguousarray(xyz_img.transpose(2, 0, 1)))
+        #torch.permute(torch.from_numpy(xyz_img), (2,0,1))
         objs = []
         # get annotations
         for box, mask, label in zip(boxes, binary_masks, labels):

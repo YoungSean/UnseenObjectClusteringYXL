@@ -17,22 +17,6 @@ from mask2former import add_maskformer2_config
 from datasets import OCIDDataset
 from tqdm import tqdm, trange
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import time
-import sys, os
-import numpy as np
-import cv2
-import scipy
-import matplotlib.pyplot as plt
-
-from fcn.config import cfg
-from fcn.test_common import _vis_minibatch_segmentation, _vis_features, _vis_minibatch_segmentation_final
-from transforms3d.quaternions import mat2quat, quat2mat, qmult
-from utils.mean_shift import mean_shift_smart_init
-from utils.evaluation import multilabel_metrics
-import utils.mask as util_
 from datasets.tabletop_dataset import TableTopDataset, getTabletopDataset
 from detectron2.modeling import build_model
 from detectron2.projects.deeplab import add_deeplab_config
@@ -53,15 +37,18 @@ add_maskformer2_config(cfg)
 cfg_file = "../../Mask2Former/configs/coco/instance-segmentation/maskformer2_R50_bs16_50ep.yaml"
 cfg.merge_from_file(cfg_file)
 add_tabletop_config(cfg)
-cfg.SOLVER.IMS_PER_BATCH = 1
+cfg.SOLVER.IMS_PER_BATCH = 1 #
 # cfg.MODEL.WEIGHTS = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/output_RGB/model_0004999.pth"
 
 # arguments frequently tuned
 cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES = 2
 use_depth = True
 weight_dir = "../../Mask2Former/"
-weight_path = weight_dir + "depth_output_n1_lr5/model_0007999_n1_lr5.pth"
+weight_path = weight_dir + "depth_lr4_wo_pretrained/model_final.pth"#depth_n2lr4_output_pretrained2/model_0080499.pth"#"output_RGB_n2/model_final.pth"
+#"depth_output_n2_lr5/model_0003999.pth"#"depth_output_n2_lr5/model_0023999n2.pth"
+# #"output_RGB_n2/model_final.pth"#"output_RGB/model_final.pth"
 #weight_path = "../../Mask2Former/output_RGB_n2/model_final.pth"
+#cfg.INPUT.INPUT_IMAGE = 'RGBD_ADD'
 
 if use_depth:
     cfg.INPUT.INPUT_IMAGE = 'DEPTH'
@@ -89,7 +76,6 @@ from topk_test_utils import Predictor_RGBD, test_dataset, test_sample
 
 cfg.MODEL.WEIGHTS = weight_path
 predictor = Predictor_RGBD(cfg)
-test_sample(cfg, ocid_dataset[4], predictor, visualization=True)
-# test_dataset(ocid_dataset, predictor, confident_score=0.9)
-#test_dataset(ocid_dataset, predictor)
-#test_dataset(cfg, dataset, predictor)
+#test_sample(cfg, ocid_dataset[4], predictor, visualization=True)
+#test_dataset(cfg, ocid_dataset, predictor)
+test_dataset(cfg, dataset, predictor, visualization=False)
