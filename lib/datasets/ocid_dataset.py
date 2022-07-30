@@ -117,6 +117,7 @@ class OCIDDataset(data.Dataset, datasets.imdb):
         depth_blob = torch.from_numpy(xyz_img).permute(2, 0, 1)
         # if we evaluate, use shape of (H W 3)
         sample['depth'] = depth_blob
+        sample["raw_depth"] = xyz_img
 
 
         return sample
