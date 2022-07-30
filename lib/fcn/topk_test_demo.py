@@ -41,10 +41,11 @@ cfg.SOLVER.IMS_PER_BATCH = 1 #
 # cfg.MODEL.WEIGHTS = "/home/xy/yxl/UnseenObjectClusteringYXL/Mask2Former/output_RGB/model_0004999.pth"
 
 # arguments frequently tuned
+cfg.TEST.DETECTIONS_PER_IMAGE = 20
 cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES = 2
 use_depth = True
-weight_dir = "../../Mask2Former/"
-weight_path = weight_dir + "depth_lr4_wo_pretrained/model_final.pth"#depth_n2lr4_output_pretrained2/model_0080499.pth"#"output_RGB_n2/model_final.pth"
+weight_path = "../../Mask2Former/depth_R50_lr4_noflip2/model_final.pth"  # depth_lr4_wo_pretrained/model_final.pth #depth_output_n80/model_0080499.pth
+#weight_path = weight_dir + "depth_lr4_wo_pretrained/model_final.pth"#depth_n2lr4_output_pretrained2/model_0080499.pth"#"output_RGB_n2/model_final.pth"
 #"depth_output_n2_lr5/model_0003999.pth"#"depth_output_n2_lr5/model_0023999n2.pth"
 # #"output_RGB_n2/model_final.pth"#"output_RGB/model_final.pth"
 #weight_path = "../../Mask2Former/output_RGB_n2/model_final.pth"
@@ -76,6 +77,6 @@ from topk_test_utils import Predictor_RGBD, test_dataset, test_sample
 
 cfg.MODEL.WEIGHTS = weight_path
 predictor = Predictor_RGBD(cfg)
-#test_sample(cfg, ocid_dataset[4], predictor, visualization=True)
+test_sample(cfg, dataset[3], predictor, visualization=True)
 #test_dataset(cfg, ocid_dataset, predictor)
-test_dataset(cfg, dataset, predictor, visualization=False)
+test_dataset(cfg, dataset, predictor, visualization=True)

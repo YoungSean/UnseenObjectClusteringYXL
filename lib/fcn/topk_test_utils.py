@@ -76,7 +76,7 @@ warnings.simplefilter("ignore", UserWarning)
 
 # Reference: https://www.reddit.com/r/computervision/comments/jb6b18/get_binary_mask_image_from_detectron2/
 
-def get_confident_instances(outputs, topk=True, score=0.9, num_class=2):
+def get_confident_instances(outputs, topk=True, score=0.9, num_class=2, low_threshold=0.4):
     """
     Extract objects with high prediction scores.
     """
@@ -84,8 +84,10 @@ def get_confident_instances(outputs, topk=True, score=0.9, num_class=2):
     if topk:
         # we need to remove background predictions
         # keep only object class
-        if num_class==2:
-            return instances[instances.pred_classes == 1]
+        if num_class>=2:
+            instances = instances[instances.pred_classes == 1]
+            confident_instances = instances[instances.scores > low_threshold]
+            return confident_instances
         else:
             return instances
     confident_instances = instances[instances.scores > score]
@@ -128,7 +130,9 @@ class Predictor_RGBD(DefaultPredictor):
             # Apply pre-processing to image.
             height, width = 480, 640
             if self.cfg.INPUT.INPUT_IMAGE == "DEPTH":
-                depth = original_image
+                image = self.aug.get_transform(original_image).apply_image(original_image)
+                image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+                depth = image
                 inputs = {"height": height, "width": width, "depth": depth}
             else:
                 if self.input_format == "RGB":
@@ -149,7 +153,7 @@ def test_sample(cfg, sample, predictor, visualization = False, topk=True, confid
         gt = sample["labels"].squeeze().numpy()
 
     if cfg.INPUT.INPUT_IMAGE == "DEPTH":
-        outputs = predictor(sample["depth"])
+        outputs = predictor(sample["raw_depth"])
     else:
         outputs = predictor(im)
     confident_instances = get_confident_instances(outputs, topk=topk, score=confident_score, num_class=cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES)

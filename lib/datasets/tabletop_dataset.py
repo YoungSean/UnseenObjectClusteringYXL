@@ -344,11 +344,13 @@ class TableTopDataset(data.Dataset, datasets.imdb):
             im = add_noise(im)
 
         record= {}
+        # record["raw_image"] = im
+        record["raw_depth"] = xyz_img
         record["file_name"] = filename
         record["image_id"] = idx
         record["height"] = self.params['img_height']
         record["width"] = self.params['img_width']
-        record["depth"] = torch.as_tensor(np.ascontiguousarray(xyz_img.transpose(2, 0, 1)))
+        # record["depth"] = torch.as_tensor(np.ascontiguousarray(xyz_img.transpose(2, 0, 1)))
         #torch.permute(torch.from_numpy(xyz_img), (2,0,1))
         objs = []
         # get annotations
@@ -362,20 +364,19 @@ class TableTopDataset(data.Dataset, datasets.imdb):
             objs.append(obj)
         record["annotations"] = objs
 
-
         label_blob = torch.from_numpy(foreground_labels).unsqueeze(0)
         record["labels"] = label_blob
         # record["image"] = torch.permute(torch.from_numpy(im), (2, 0, 1))
 
-        if not objs:
-            record["instances"] = None
-        else:
-            if self.data_mapper:
-                image_shape = im.shape[:2]
-                instances = utils.annotations_to_instances(
-                    objs, image_shape, mask_format="bitmask"
-                )
-                record["instances"] = utils.filter_empty_instances(instances)
+        # if not objs:
+        #     record["instances"] = None
+        # else:
+        #     if self.data_mapper:
+        #         image_shape = im.shape[:2]
+        #         instances = utils.annotations_to_instances(
+        #             objs, image_shape, mask_format="bitmask"
+        #         )
+        #         record["instances"] = utils.filter_empty_instances(instances)
         return record
 
     def __len__(self):
