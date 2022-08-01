@@ -43,14 +43,17 @@ cfg.SOLVER.IMS_PER_BATCH = 1 #
 # arguments frequently tuned
 cfg.TEST.DETECTIONS_PER_IMAGE = 20
 cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES = 2
-use_depth = True
-weight_path = "../../Mask2Former/depth_R50_lr4_noflip2/model_final.pth" #depth_output_n80/model_0080499.pth
+cfg.INPUT.INPUT_IMAGE = 'DEPTH' #"RGBD_ADD" #'DEPTH'
+weight_path = "../../Mask2Former/depth_n2_R50_0730/model_0052499.pth"
+#"rgbdadd_R50_lr4_4000/model_final.pth"
+#depth_n2_R50_0730/model_0052499.pth
+# #depth_output_n80/model_0080499.pth
 # #"output_RGB_n2/model_final.pth"#"output_RGB/model_final.pth"
 #weight_path = "../../Mask2Former/output_RGB_n2/model_final.pth"
 #cfg.INPUT.INPUT_IMAGE = 'RGBD_ADD'
 
-if use_depth:
-    cfg.INPUT.INPUT_IMAGE = 'DEPTH'
+
+
 # test_dataset(dataset, predictor)
 
 
@@ -75,7 +78,11 @@ from topk_test_utils import Predictor_RGBD, test_dataset, test_sample
 
 cfg.MODEL.WEIGHTS = weight_path
 predictor = Predictor_RGBD(cfg)
-test_sample(cfg, ocid_dataset[4], predictor, visualization=True)
-test_sample(cfg, dataset[3], predictor, visualization=True)
-#test_dataset(cfg, ocid_dataset, predictor)
-#test_dataset(cfg, dataset, predictor, visualization=True)
+#test_sample(cfg, ocid_dataset[4], predictor, visualization=True)
+#test_sample(cfg, dataset[3], predictor, visualization=True)
+
+#test_dataset(cfg, dataset, predictor, visualization=False, topk=False, confident_score=0.9)
+
+# OCID dataset
+# #test_dataset(cfg, ocid_dataset, predictor, visualization=True)
+test_dataset(cfg, ocid_dataset, predictor, visualization=False, topk=False, confident_score=0.8)

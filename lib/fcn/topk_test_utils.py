@@ -116,10 +116,11 @@ def combine_masks(instances):
 
 class Predictor_RGBD(DefaultPredictor):
 
-    def __call__(self, original_image):
+    def __call__(self, sample):
         """
         Args:
-            original_image (np.ndarray): an image of shape (H, W, C) (in BGR order).
+            sample: a dict of a data sample
+            # ignore: original_image (np.ndarray): an image of shape (H, W, C) (in BGR order).
 
         Returns:
             predictions (dict):
@@ -129,34 +130,42 @@ class Predictor_RGBD(DefaultPredictor):
         with torch.no_grad():  # https://github.com/sphinx-doc/sphinx/issues/4258
             # Apply pre-processing to image.
             height, width = 480, 640
-            if self.cfg.INPUT.INPUT_IMAGE == "DEPTH":
-                image = self.aug.get_transform(original_image).apply_image(original_image)
-                image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
-                depth = image
-                inputs = {"height": height, "width": width, "depth": depth}
-            else:
-                if self.input_format == "RGB":
-                    # whether the model expects BGR inputs or RGB
-                    original_image = original_image[:, :, ::-1]
-                image = self.aug.get_transform(original_image).apply_image(original_image)
-                image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
-                inputs = {"image": image, "height": height, "width": width}
+            original_image = cv2.imread(sample["file_name"])
+            if self.input_format == "RGB":
+                # whether the model expects BGR inputs or RGB
+                original_image = original_image[:, :, ::-1]
+            transforms = self.aug.get_transform(original_image)
+            image = transforms.apply_image(original_image)
+            image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+            inputs = {"image": image, "height": height, "width": width}
+
+            if self.cfg.INPUT.INPUT_IMAGE == "DEPTH" or "RGBD" in self.cfg.INPUT.INPUT_IMAGE:
+                depth_image = sample["raw_depth"]
+                depth_image = transforms.apply_image(depth_image)
+                depth_image = torch.as_tensor(depth_image.astype("float32").transpose(2, 0, 1))
+                depth = depth_image
+                inputs["depth"] = depth
+
+
 
             predictions = self.model([inputs])[0]
             return predictions
 
-def test_sample(cfg, sample, predictor, visualization = False, topk=True, confident_score=0.9):
+def test_sample(cfg, sample, predictor, visualization = False, topk=True, confident_score=0.9, low_threshold=0.4):
     im = cv2.imread(sample["file_name"])
     if "label" in sample.keys():
         gt = sample["label"].squeeze().numpy()
     else:
         gt = sample["labels"].squeeze().numpy()
 
-    if cfg.INPUT.INPUT_IMAGE == "DEPTH":
-        outputs = predictor(sample["raw_depth"])
-    else:
-        outputs = predictor(im)
-    confident_instances = get_confident_instances(outputs, topk=topk, score=confident_score, num_class=cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES)
+    # if cfg.INPUT.INPUT_IMAGE == "DEPTH":
+    #     outputs = predictor(sample["raw_depth"])
+    # else:
+    #     outputs = predictor(im)
+    outputs = predictor(sample)
+    confident_instances = get_confident_instances(outputs, topk=topk, score=confident_score,
+                                                  num_class=cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES,
+                                                  low_threshold=low_threshold)
     binary_mask = combine_masks(confident_instances)
     metrics = multilabel_metrics(binary_mask, gt)
     #print(f"metrics: ", metrics)
@@ -172,10 +181,11 @@ def test_sample(cfg, sample, predictor, visualization = False, topk=True, confid
         cv2.destroyAllWindows()
     return metrics
 
-def test_dataset(cfg,dataset, predictor, visualization=False, topk=True, confident_score=0.9):
+def test_dataset(cfg,dataset, predictor, visualization=False, topk=True, confident_score=0.9, low_threshold=0.4):
     metrics_all = []
     for i in trange(len(dataset)):
-        metrics = test_sample(cfg, dataset[i], predictor, visualization=visualization, topk=topk, confident_score=confident_score)
+        metrics = test_sample(cfg, dataset[i], predictor, visualization=visualization,
+                              topk=topk, confident_score=confident_score, low_threshold=low_threshold)
         metrics_all.append(metrics)
     # for i in tqdm(dataset):
     #     metrics = test_sample(i, predictor, visualization=visualization)
@@ -183,6 +193,7 @@ def test_dataset(cfg,dataset, predictor, visualization=False, topk=True, confide
     print('========================================================')
     if not topk:
         print("Mask threshold: ", confident_score)
+
     print("weight: ", cfg.MODEL.WEIGHTS)
     result = {}
     num = len(metrics_all)
