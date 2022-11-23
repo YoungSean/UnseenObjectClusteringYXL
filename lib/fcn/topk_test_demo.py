@@ -14,7 +14,7 @@ from detectron2.evaluation import DatasetEvaluator, inference_on_dataset, Datase
 from detectron2.utils.visualizer import Visualizer
 # from Mask2Former.mask2former import add_maskformer2_config
 from mask2former import add_maskformer2_config
-from datasets import OCIDDataset
+from datasets import OCIDDataset, OSDObject
 from tqdm import tqdm, trange
 
 from datasets.tabletop_dataset import TableTopDataset, getTabletopDataset
@@ -43,8 +43,10 @@ cfg.SOLVER.IMS_PER_BATCH = 1 #
 # arguments frequently tuned
 cfg.TEST.DETECTIONS_PER_IMAGE = 20
 cfg.MODEL.SEM_SEG_HEAD.NUM_CLASSES = 2
-cfg.INPUT.INPUT_IMAGE = 'DEPTH' #"RGBD_ADD" #'DEPTH'
-weight_path = "../../Mask2Former/depth_n2_R50_0730/model_0052499.pth"
+cfg.INPUT.INPUT_IMAGE = 'RGBD_ADD' #"RGBD_ADD" #'DEPTH'
+weight_path = "../../Mask2Former/rgbd_add_0731/model_0096249.pth"
+# depth_n2_R50_0730/model_0179374.pth
+#"depth_n2_R50_0730/model_0052499.pth"
 #"rgbdadd_R50_lr4_4000/model_final.pth"
 #depth_n2_R50_0730/model_0052499.pth
 # #depth_output_n80/model_0080499.pth
@@ -59,6 +61,7 @@ weight_path = "../../Mask2Former/depth_n2_R50_0730/model_0052499.pth"
 
 dataset = TableTopDataset(data_mapper=True,eval=True)
 ocid_dataset = OCIDDataset(image_set="test")
+osd_dataset = OSDObject(image_set="test")
 
 use_my_dataset = True
 for d in ["train", "test"]:
@@ -79,10 +82,13 @@ from topk_test_utils import Predictor_RGBD, test_dataset, test_sample
 cfg.MODEL.WEIGHTS = weight_path
 predictor = Predictor_RGBD(cfg)
 #test_sample(cfg, ocid_dataset[4], predictor, visualization=True)
+# test_sample(cfg, osd_dataset[4], predictor, visualization=True)
 #test_sample(cfg, dataset[3], predictor, visualization=True)
 
 #test_dataset(cfg, dataset, predictor, visualization=False, topk=False, confident_score=0.9)
 
 # OCID dataset
-# #test_dataset(cfg, ocid_dataset, predictor, visualization=True)
-test_dataset(cfg, ocid_dataset, predictor, visualization=False, topk=False, confident_score=0.8)
+test_dataset(cfg, ocid_dataset, predictor, visualization=False, topk=False, confident_score=0.7)
+
+# OSD
+# test_dataset(cfg, osd_dataset, predictor, visualization=False, topk=False, confident_score=0.7)

@@ -232,14 +232,15 @@ def multilabel_metrics(prediction, gt, obj_detect_threshold=0.75):
     # Overlap measures
     precision = np.sum(true_positives[idx]) / np.sum(prediction.clip(0,1) == OBJECTS_LABEL)
     recall = np.sum(true_positives[idx]) / np.sum(gt.clip(0,1) == OBJECTS_LABEL)
-    F_measure = (2 * precision * recall) / (precision + recall)
+    F_measure = (2 * precision * recall) / (precision + recall+ 1e-10)
     if np.isnan(F_measure): # b/c precision = recall = 0
         F_measure = 0
 
     # Boundary measures
     boundary_precision = np.sum(boundary_stuff[idx][:,0]) / boundary_prec_denom
     boundary_recall = np.sum(boundary_stuff[idx][:,1]) / boundary_rec_denom
-    boundary_F_measure = (2 * boundary_precision * boundary_recall) / (boundary_precision + boundary_recall)
+    # add 1e-10 to avoid that the result in the denominator is extremely close to zero.
+    boundary_F_measure = (2 * boundary_precision * boundary_recall) / (boundary_precision + boundary_recall + 1e-10)
     if np.isnan(boundary_F_measure): # b/c/ precision = recall = 0
         boundary_F_measure = 0
 

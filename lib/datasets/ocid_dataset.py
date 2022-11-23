@@ -77,10 +77,10 @@ class OCIDDataset(data.Dataset, datasets.imdb):
         # BGR image
         filename = str(self.image_paths[idx])
         im = cv2.imread(filename)
-        if cfg.TRAIN.CHROMATIC and cfg.MODE == 'TRAIN' and np.random.rand(1) > 0.1:
-            im = chromatic_transform(im)
-        if cfg.TRAIN.ADD_NOISE and cfg.MODE == 'TRAIN' and np.random.rand(1) > 0.1:
-            im = add_noise(im)
+        # if cfg.TRAIN.CHROMATIC and cfg.MODE == 'TRAIN' and np.random.rand(1) > 0.1:
+        #     im = chromatic_transform(im)
+        # if cfg.TRAIN.ADD_NOISE and cfg.MODE == 'TRAIN' and np.random.rand(1) > 0.1:
+        #     im = add_noise(im)
         im_tensor = torch.from_numpy(im) / 255.0
 
         im_tensor_bgr = im_tensor.clone()

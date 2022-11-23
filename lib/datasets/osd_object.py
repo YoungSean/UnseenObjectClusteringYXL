@@ -65,10 +65,10 @@ class OSDObject(data.Dataset, datasets.imdb):
         # BGR image
         filename = self.image_files[idx]
         im = cv2.imread(filename)
-        if cfg.TRAIN.CHROMATIC and cfg.MODE == 'TRAIN' and np.random.rand(1) > 0.1:
-            im = chromatic_transform(im)
-        if cfg.TRAIN.ADD_NOISE and cfg.MODE == 'TRAIN' and np.random.rand(1) > 0.1:
-            im = add_noise(im)
+        # if cfg.TRAIN.CHROMATIC and cfg.MODE == 'TRAIN' and np.random.rand(1) > 0.1:
+        #     im = chromatic_transform(im)
+        # if cfg.TRAIN.ADD_NOISE and cfg.MODE == 'TRAIN' and np.random.rand(1) > 0.1:
+        #     im = add_noise(im)
         im_tensor = torch.from_numpy(im) / 255.0
 
         im_tensor_bgr = im_tensor.clone()
@@ -87,18 +87,20 @@ class OSDObject(data.Dataset, datasets.imdb):
         sample = {'image_color': image_blob,
                   'image_color_bgr': im_tensor_bgr,
                   'label': label_blob,
-                  'filename': filename[index+4:]}
+                  'filename': filename[index+4:],
+                  'file_name': filename}
 
         # Depth image
-        if cfg.INPUT == 'DEPTH' or cfg.INPUT == 'RGBD':
-            pcd_filename = filename.replace('image_color', 'pcd')
-            pcd_filename = pcd_filename.replace('png', 'pcd')
-            pcd = open3d.io.read_point_cloud(pcd_filename)
-            pcloud = np.asarray(pcd.points).astype(np.float32)
-            pcloud[np.isnan(pcloud)] = 0
-            xyz_img = pcloud.reshape((self._height, self._width, 3))
-            depth_blob = torch.from_numpy(xyz_img).permute(2, 0, 1)
-            sample['depth'] = depth_blob
+        # if cfg.INPUT == 'DEPTH' or cfg.INPUT == 'RGBD':
+        pcd_filename = filename.replace('image_color', 'pcd')
+        pcd_filename = pcd_filename.replace('png', 'pcd')
+        pcd = open3d.io.read_point_cloud(pcd_filename)
+        pcloud = np.asarray(pcd.points).astype(np.float32)
+        pcloud[np.isnan(pcloud)] = 0
+        xyz_img = pcloud.reshape((self._height, self._width, 3))
+        depth_blob = torch.from_numpy(xyz_img).permute(2, 0, 1)
+        sample['depth'] = depth_blob
+        sample["raw_depth"] = xyz_img
 
         return sample
 

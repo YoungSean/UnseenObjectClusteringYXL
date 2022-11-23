@@ -84,7 +84,7 @@ def get_confident_instances(outputs, topk=True, score=0.9, num_class=2, low_thre
     if topk:
         # we need to remove background predictions
         # keep only object class
-        if num_class>=2:
+        if num_class >= 2:
             instances = instances[instances.pred_classes == 1]
             confident_instances = instances[instances.scores > low_threshold]
             return confident_instances
@@ -193,6 +193,9 @@ def test_dataset(cfg,dataset, predictor, visualization=False, topk=True, confide
     print('========================================================')
     if not topk:
         print("Mask threshold: ", confident_score)
+    else:
+        print(f"We first pick top {cfg.TEST.DETECTIONS_PER_IMAGE} instances ")
+        print(f"and get those whose class confidence > {low_threshold}.")
 
     print("weight: ", cfg.MODEL.WEIGHTS)
     result = {}
